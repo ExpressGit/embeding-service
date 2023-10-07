@@ -1,0 +1,2 @@
+# embeding-service
+embeding-service
