@@ -57,7 +57,7 @@ class Item(BaseModel):
     model: str
     input: List[str]
     
-@app.post('/embeddings')
+@app.post('/v1/embeddings')
 def embeddings(item: Item):   
     embdding_model = app.state.embedding_model
     if item.model != 'm3e':
