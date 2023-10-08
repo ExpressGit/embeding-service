@@ -1,15 +1,13 @@
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sentence_transformers import SentenceTransformer
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-import tiktoken
 import numpy as np
-from scipy.interpolate import interp1d
+
 from typing import List
-from sklearn.preprocessing import PolynomialFeatures
+
 from EmbeddingModelLoad import embeding_model
 import torch
 import os
@@ -51,17 +49,6 @@ async def startup_event():
 # model_loader = ModelLoader()
 
 
-# @app.post('/v1/embeddings')
-# def embeddings(item: Item):   
-#     embdding_model = app.state.embedding_model
-#     if item.model != 'm3e':
-#         if item.model in embeding_dict.keys():
-#             embdding_model = embedding_object_model.load_model(embeding_dict[item.model])
-#     embeddings = embdding_model.encode(item.input)
-#     #print(embeddings)
-#     return embeddings.tolist()
-
-
 
 
 #环境变量传入
@@ -91,30 +78,7 @@ class EmbeddingResponse(BaseModel):
     object: str
     usage: dict
 
-def num_tokens_from_string(string: str) -> int:
-    """Returns the number of tokens in a text string."""
-    encoding = tiktoken.get_encoding('cl100k_base')
-    num_tokens = len(encoding.encode(string))
-    return num_tokens
 
-# 插值法
-def interpolate_vector(vector, target_length):
-    original_indices = np.arange(len(vector))
-    target_indices = np.linspace(0, len(vector)-1, target_length)
-    f = interp1d(original_indices, vector, kind='linear')
-    return f(target_indices)
-
-def expand_features(embedding, target_length):
-    poly = PolynomialFeatures(degree=2)
-    expanded_embedding = poly.fit_transform(embedding.reshape(1, -1))
-    expanded_embedding = expanded_embedding.flatten()
-    if len(expanded_embedding) > target_length:
-        # 如果扩展后的特征超过目标长度，可以通过截断或其他方法来减少维度
-        expanded_embedding = expanded_embedding[:target_length]
-    elif len(expanded_embedding) < target_length:
-        # 如果扩展后的特征少于目标长度，可以通过填充或其他方法来增加维度
-        expanded_embedding = np.pad(expanded_embedding, (0, target_length - len(expanded_embedding)))
-    return expanded_embedding
 
 @app.post("/v1/embeddings", response_model=EmbeddingResponse)
 async def get_embeddings(request: EmbeddingRequest):
@@ -131,7 +95,7 @@ async def get_embeddings(request: EmbeddingRequest):
     # 如果嵌入向量的维度不为1536，则使用插值法扩展至1536维度
     # embeddings = [interpolate_vector(embedding, 1536) if len(embedding) < 1536 else embedding for embedding in embeddings]
     # 如果嵌入向量的维度不为1536，则使用特征扩展法扩展至1536维度
-    embeddings = [expand_features(embedding, 1536) if len(embedding) < 1536 else embedding for embedding in embeddings]
+    embeddings = [embedding_object_model.expand_features(embedding, 1536) if len(embedding) < 1536 else embedding for embedding in embeddings]
 
     # Min-Max normalization
     # embeddings = [(embedding - np.min(embedding)) / (np.max(embedding) - np.min(embedding)) if np.max(embedding) != np.min(embedding) else embedding for embedding in embeddings]
@@ -139,7 +103,7 @@ async def get_embeddings(request: EmbeddingRequest):
     # 将numpy数组转换为列表
     embeddings = [embedding.tolist() for embedding in embeddings]
     prompt_tokens = sum(len(text.split()) for text in request.input)
-    total_tokens = sum(num_tokens_from_string(text) for text in request.input)
+    total_tokens = sum(embedding_object_model.num_tokens_from_string(text) for text in request.input)
 
 
     response = {
