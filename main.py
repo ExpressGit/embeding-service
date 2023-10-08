@@ -75,4 +75,4 @@ def embeddings(item: Item):
 
 if __name__ == '__main__':
     # uvicorn.run(app)
-    uvicorn.run(app="main:app", preload=False,host="0.0.0.0", port=6050, reload=True)
+    uvicorn.run(app="main:app", host="0.0.0.0", port=6050, reload=True)
