@@ -11,7 +11,7 @@ import uvicorn
 app = FastAPI() # 建立一個 Fast API application
 # 默认初始化模型
 embedding_object_model = embeding_model_load()
-embdding_model = embedding_object_model.load_model('moka-ai/m3e-base')
+default_embdding_model = embedding_object_model.load_model('moka-ai/m3e-base')
 
 @app.get("/users/{user_id}") # 指定 api 路徑 (get方法)
 def read_user(user_id: int, q: Optional[str] = None):
@@ -38,6 +38,7 @@ def embeddings():
     model: str = Body('m3e', title='model_name', embed=True)
     input: Optional[str] = Body(..., title="texts", embed=True)
     print(model)
+    embdding_model = default_embdding_model
     if model != 'm3e':
         if model in embeding_dict.keys():
             embdding_model = embedding_object_model.load_model(embeding_dict['model'])
