@@ -1,0 +1,4 @@
+fastapi # FastAPI
+uvicorn[standard] # ASGI Server
+sentence-transformers
+fschat
