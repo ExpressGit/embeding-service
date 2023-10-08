@@ -16,8 +16,7 @@ class embeding_model_load(object):
     
     def load_model(self):
         from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer("moka-ai/m3e-base")
-        
+        model = SentenceTransformer(self.model_name_or_path)
         return model
     
 if __name__ == '__main__':
